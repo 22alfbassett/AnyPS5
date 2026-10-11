@@ -233,6 +233,14 @@ void testDecode() {
         group.attribute.option = option;
         check(expectFailure([&] { DescribeVideoOutBuffer(registered, group); }).find("buffer option " + std::to_string(option)) != std::string::npos, "an unsupported buffer option was accepted");
     }
+    sceVideoOutSetBufferAttribute2(&group.attribute, 0x8000000000000000ull, 0, 259, 137, VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE, 0, 0);
+    sceVideoOutAddBufferAttributeOption(&group.attribute, VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY);
+    check(group.attribute.option == VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY && group.attribute.width == 259 && group.attribute.height == 137, "adding an option did not set only that option");
+    DescribeVideoOutBuffer(registered, group);
+    sceVideoOutAddBufferAttributeOption(&group.attribute, 0x20);
+    check(group.attribute.option == (VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY | 0x20), "adding an option clearned an option already set");
+    check(expectFailure([&] { DescribeVideoOutBuffer(registered, group); }).find("buffer option 40") != std::string::npos, "the unknown option 0x20 was accepted");
+    check(expectFailure([] { sceVideoOutAddBufferAttributeOption(nullptr, VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_STRICT_COLORIMETRY); }).find("null attribute") != std::string::npos, "a null attribute was accepted");
     VideoOutBuffer dccBuffer{0, reinterpret_cast<uint64_t>(tiled.data()), 0x7f0000};
     sceVideoOutSetBufferAttribute2(&group.attribute, 0x8000000000000000ull, 0, 259, 137, VIDEO_OUT_BUFFER_ATTRIBUTE_OPTION_NONE, 0x208, 0x11223344);
     group.category = VIDEO_OUT_BUFFER_ATTRIBUTE_CATEGORY_COMPRESSED;
